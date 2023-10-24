@@ -4,12 +4,14 @@ import {
   Flex,
   Select,
   Stack,
+  Text,
   Textarea,
   useToast,
 } from "@chakra-ui/react";
-import React, { useReducer } from "react";
+import React, { useReducer, useState } from "react";
 import { reducer } from "../Api/reducer";
 import { postLanguageTranslation, postTextGenerator, postTextSummariz } from "../Api/api";
+import  HistoryBox  from "./HistoryBox";
 
 const init = {
     loading: false,
@@ -19,8 +21,9 @@ const init = {
 export const ContentBox = () => {
   const [state, dispatch] = useReducer(reducer, init);
   const { loading, error, output } = state;
-
+  const [history, setHistory] = useState(JSON.parse(localStorage.getItem("history")) || [])
   const toast = useToast();
+  const [current, setCurrent] = useState('Text Generate');
   const handleSubmit = async () => {
     let query = document.querySelector("#query");
     let type = document.querySelector("#type");
@@ -61,7 +64,17 @@ export const ContentBox = () => {
         if(response.issue){
             dispatch({type: "ERROR", payload: response.msg});
         }else{
-            dispatch({type: "OUTPUT", payload: response.msg});
+          dispatch({type: "OUTPUT", payload: response.msg});
+          let data = [
+            ...history,
+            {
+              type: type.value,
+              query: query.value,
+              content: response.msg,
+            }
+          ];
+          localStorage.setItem('history', JSON.stringify(data));
+          setHistory(data);   
         }
 
     }
@@ -102,6 +115,16 @@ export const ContentBox = () => {
           {!loading ? "Submit" : "Loading..."}
         </Button>
       </Stack>
+     <Flex mt={12}>
+      <Stack gap={0} >
+        <Button onClick={(e)=> setCurrent(e.target.value)} colorScheme={current === "Text Generate" ? "green" : "blue"} borderRadius={'.5rem 0 0 0 '} value={'Text Generate'}>Text Generate</Button>
+        <Button  onClick={(e)=> setCurrent(e.target.value)} colorScheme={current === "Text Summariz" ? "green" : "blue"} borderRadius={'none'} value={'Text Summariz'}>Text Summariz</Button>
+        <Button  onClick={(e)=> setCurrent(e.target.value)} colorScheme={current === "Language Translation" ? "green" : "blue"} borderRadius={'0 0 0 .5rem'} value={"Language Translation"}>Language Translation</Button>
+      </Stack>
+      <Box>
+      <HistoryBox history={history} current={current} />
+      </Box>
+     </Flex>
     </Box>
   );
 };
